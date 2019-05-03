@@ -27,6 +27,7 @@ typedef enum : NSUInteger {
     ResizeNative,
     ResizeBody,
     ResizeIonic,
+    ResizeSelector
 } ResizePolicy;
 
 #ifndef __CORDOVA_3_2_0
@@ -37,6 +38,7 @@ typedef enum : NSUInteger {
 
 @property (nonatomic, readwrite, assign) BOOL keyboardIsVisible;
 @property (nonatomic, readwrite) ResizePolicy keyboardResizes;
+@property (nonatomic, readwrite) NSString * keyboardResizesSelector;
 @property (nonatomic, readwrite) BOOL isWK;
 @property (nonatomic, readwrite) int paddingBottom;
 
@@ -45,6 +47,7 @@ typedef enum : NSUInteger {
 @implementation CDVIonicKeyboard
 
 NSTimer *hideTimer;
+NSTimeInterval keyboardResizesDelay = -1;
 
 - (id)settingForKey:(NSString *)key
 {
@@ -72,6 +75,9 @@ NSTimer *hideTimer;
                 self.keyboardResizes = ResizeIonic;
             } else if ([resizeMode isEqualToString:@"body"]) {
                 self.keyboardResizes = ResizeBody;
+            } else if ([resizeMode containsString:@"selector:"]) {
+                self.keyboardResizes = ResizeSelector;
+                self.keyboardResizesSelector = [resizeMode substringWithRange:NSMakeRange(9, resizeMode.length-9)];
             }
         }
         NSLog(@"CDVIonicKeyboard: resize mode %d", self.keyboardResizes);
@@ -135,8 +141,12 @@ NSTimer *hideTimer;
     double height = rect.size.height;
 
     if (self.isWK) {
-        double duration = [[note.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue];
-        [self setKeyboardHeight:height delay:duration+0.2];
+        NSTimeInterval delay = keyboardResizesDelay;
+        if (keyboardResizesDelay < 0) {
+            double duration = [[note.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+            delay = duration + 0.2;
+        }
+        [self setKeyboardHeight:height delay:delay];
         [self resetScrollView];
     }
 
@@ -212,14 +222,21 @@ NSTimer *hideTimer;
         }
         case ResizeIonic:
         {
-            NSString *js = [NSString stringWithFormat:@"Keyboard.fireOnResize(%d, %d, document.querySelector('ion-app'));",
-                            _paddingBottom, (int)f.size.height];
+            NSString *js = [NSString stringWithFormat:@"Keyboard.fireOnResize(%d, document.querySelector('ion-app'));",
+                            _paddingBottom];
             [self.commandDelegate evalJs:js];
             break;
         }
         case ResizeNative:
         {
             [self.webView setFrame:CGRectMake(wf.origin.x, wf.origin.y, f.size.width - wf.origin.x, f.size.height - wf.origin.y - self.paddingBottom)];
+            break;
+        }
+        case ResizeSelector:
+        {
+            NSString *js = [NSString stringWithFormat:@"Keyboard.fireOnResize(%d, %d, document.querySelector('%@'));",
+                            _paddingBottom, (int)f.size.height, self.keyboardResizesSelector];
+            [self.commandDelegate evalJs:js];
             break;
         }
         default:
@@ -296,11 +313,18 @@ static IMP WKOriginalImp;
         self.keyboardResizes = ResizeBody;
     } else if ([mode isEqualToString:@"native"]) {
         self.keyboardResizes = ResizeNative;
+    } else if ([mode containsString:@"selector:"]) {
+        self.keyboardResizes = ResizeSelector;
+        self.keyboardResizesSelector = [mode substringWithRange:NSMakeRange(9, mode.length-9)];
     } else {
         self.keyboardResizes = ResizeNone;
     }
-}
 
+    keyboardResizesDelay = -1;
+    if (command.arguments[1] != [NSNull null]) {
+        keyboardResizesDelay = [[command.arguments objectAtIndex:1] doubleValue];
+    }
+}
 
 #pragma mark dealloc
 

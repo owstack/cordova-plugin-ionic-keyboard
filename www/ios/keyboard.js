@@ -61,10 +61,50 @@ Keyboard.fireOnResize = function (height, screenHeight, ele) {
     if (!ele) {
         return;
     }
-    if (height === 0) {
-        ele.style.height = null;
+    if ('body|ion-app'.includes(ele.nodeName.toLowerCase())) {
+        // Preserves legacy behavior.
+        if (height === 0) {
+            ele.style.height = null;
+        } else {
+            ele.style.height = (screenHeight - height) + 'px';
+        }
     } else {
-        ele.style.height = (screenHeight - height) + 'px';
+        // Using a resizes selector.
+        if (height === 0) {
+            ele.style.transform = null;
+        } else {
+            var activeEle;
+            if (ele.nodeName.toLowerCase() == 'iframe') {
+                activeEle = ele.contentDocument.activeElement;
+            } else {
+                activeEle = ele.activeElement;
+            }
+            var position = 0;
+            var activeEleRect = activeEle.getBoundingClientRect();
+            if (activeEleRect.y - height > 0) {
+                // Move up 10% more than the computed minimum position.
+                position = (activeEleRect.y - height) + ((screenHeight - height) * 0.1 / pixDensity);
+            }
+            ele.setAttribute('style', 'transform: translateY(-' + position + 'px)');
+
+            if (activeEle.setSelectionRange) {
+                // This a hack to force redraw of the active element (typ. an input) and gracefully position the cursor.
+                var activeEleColor = window.getComputedStyle(activeEle).color;
+                var activeEleTextShadow = activeEle.style.textShadow;
+                activeEle.style.color ='transparent';
+                activeEle.style.textShadow = '0 0 0 ' + activeEleColor;
+
+                activeEle.style.webkitUserSelect = 'unset';
+
+                setTimeout(function() {
+                    activeEle.setSelectionRange(1000,1000); // Position caret at end of text (assumes not more than 1000 char input).
+                    activeEle.style.webkitUserSelect = 'text';
+
+                    activeEle.style.color = activeEleColor;
+                    activeEle.style.textShadow = activeEleTextShadow;
+                }, 200);
+            }
+        }        
     }
 };
 
@@ -90,8 +130,8 @@ Keyboard.disableScroll = function (disable) {
     console.warn("Keyboard.disableScroll() was removed");
 };
 
-Keyboard.setResizeMode = function (mode) {
-    exec(null, null, "Keyboard", "setResizeMode", [mode]);
+Keyboard.setResizeMode = function (mode, delay) {
+    exec(null, null, "Keyboard", "setResizeMode", [mode, delay]);
 }
 
 Keyboard.isVisible = false;
