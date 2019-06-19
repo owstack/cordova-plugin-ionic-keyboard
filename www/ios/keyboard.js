@@ -83,7 +83,7 @@ Keyboard.fireOnResize = function (height, screenHeight, ele) {
             var activeEleRect = activeEle.getBoundingClientRect();
             if (activeEleRect.y - height > 0) {
                 // Move up 10% more than the computed minimum position.
-                position = (activeEleRect.y - height) + ((screenHeight - height) * 0.1 / pixDensity);
+                position = (activeEleRect.y - height) + ((screenHeight - height) * 0.1);
             }
             ele.setAttribute('style', 'transform: translateY(-' + position + 'px)');
 
