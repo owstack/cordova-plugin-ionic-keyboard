@@ -95,6 +95,8 @@ Keyboard.fireOnResize = function (density, keyboardHeight, screenHeight, ele) {
     }
 
     function getScreenCoordinates(ele) {
+        return ele.getBoundingClientRect();
+/*
         var p = {};
         p.x = ele.offsetLeft;
         p.y = ele.offsetTop;
@@ -109,6 +111,7 @@ Keyboard.fireOnResize = function (density, keyboardHeight, screenHeight, ele) {
             }
         }
         return p;
+*/
     };
 };
 
