@@ -96,22 +96,6 @@ Keyboard.fireOnResize = function (density, keyboardHeight, screenHeight, ele) {
 
     function getScreenCoordinates(ele) {
         return ele.getBoundingClientRect();
-/*
-        var p = {};
-        p.x = ele.offsetLeft;
-        p.y = ele.offsetTop;
-        while (ele.offsetParent) {
-            p.x = p.x + ele.offsetParent.offsetLeft;
-            p.y = p.y + ele.offsetParent.offsetTop;
-            if (ele == document.getElementsByTagName("body")[0]) {
-                break;
-            }
-            else {
-                ele = ele.offsetParent;
-            }
-        }
-        return p;
-*/
     };
 };
 
